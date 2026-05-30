@@ -1,10 +1,10 @@
-const CACHE_NAME = "chen-jiawen-coc-v10";
+const CACHE_NAME = "chen-jiawen-coc-v11";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=10",
-  "./app.js?v=10",
-  "./manifest.json?v=10",
+  "./styles.css?v=11",
+  "./app.js?v=11",
+  "./manifest.json?v=11",
   "./assets/chen-jiawen.png"
 ];
 

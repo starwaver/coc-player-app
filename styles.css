@@ -477,6 +477,12 @@ main {
   margin-bottom: 12px;
 }
 
+.status-divider {
+  height: 1px;
+  margin: 14px 0;
+  background: rgba(57, 64, 53, 0.82);
+}
+
 .check-tile {
   display: flex;
   align-items: center;

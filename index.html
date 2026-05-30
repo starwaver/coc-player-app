@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#151815">
   <title>陈嘉文 CoC 跑团记录</title>
-  <link rel="manifest" href="manifest.json?v=10">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="manifest" href="manifest.json?v=11">
+  <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
   <div class="app-shell">
@@ -41,9 +41,18 @@
         <section class="panel vitals-panel">
           <div class="section-heading">
             <h2>当前状态</h2>
-            <button class="ghost-button edit-only" id="recalcButton" type="button">按规则重算上限</button>
+            <div class="section-actions">
+              <span class="quiet">跑团中快速调整</span>
+              <button class="ghost-button edit-only" id="recalcButton" type="button">按规则重算上限</button>
+            </div>
           </div>
           <div class="vital-grid" id="vitalGrid"></div>
+          <div class="status-divider"></div>
+          <div class="status-grid" id="statusGrid"></div>
+          <label class="field full-field">
+            <span>受伤 / 状态备注</span>
+            <textarea id="statusNote" rows="3" placeholder="例如：右臂擦伤，临时疯狂持续至..."></textarea>
+          </label>
         </section>
 
         <section class="panel">
@@ -65,18 +74,6 @@
             <span class="quiet" id="derivedModeLabel">规则速查</span>
           </div>
           <div class="derived-grid" id="derivedGrid"></div>
-        </section>
-
-        <section class="panel">
-          <div class="section-heading">
-            <h2>状态标记</h2>
-            <span class="quiet">跑团中快速勾选</span>
-          </div>
-          <div class="status-grid" id="statusGrid"></div>
-          <label class="field full-field">
-            <span>受伤 / 状态备注</span>
-            <textarea id="statusNote" rows="3" placeholder="例如：右臂擦伤，临时疯狂持续至..."></textarea>
-          </label>
         </section>
 
         <section class="panel dice-panel">
@@ -201,6 +198,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>

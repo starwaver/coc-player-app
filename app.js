@@ -503,9 +503,13 @@ function renderProfile() {
 
 function updateVital(key, field, value) {
   if (!state.vitals[key]) return;
+  const previousCurrent = Number(state.vitals[key].current || 0);
   state.vitals[key][field] = clampNumber(value, 0, 999);
   if (field === "max" && state.vitals[key].current > state.vitals[key].max) {
     state.vitals[key].current = state.vitals[key].max;
+  }
+  if (field === "current") {
+    maybePromptStatusForVitalChange(key, previousCurrent, Number(state.vitals[key].current || 0));
   }
   saveState();
 }
@@ -513,9 +517,39 @@ function updateVital(key, field, value) {
 function adjustVital(key, delta) {
   if (!state.vitals[key]) return;
   const vital = state.vitals[key];
+  const previousCurrent = Number(vital.current || 0);
   vital.current = clampNumber(Number(vital.current || 0) + Number(delta), 0, 999);
+  maybePromptStatusForVitalChange(key, previousCurrent, Number(vital.current || 0));
   saveState();
   renderVitals();
+}
+
+function maybePromptStatusForVitalChange(key, previousCurrent, nextCurrent) {
+  const loss = previousCurrent - nextCurrent;
+  if (loss <= 0) return;
+  if (key === "hp") {
+    const maxHp = Number(state.vitals.hp?.max || 0);
+    const majorWoundLoss = maxHp > 0 ? Math.ceil(maxHp / 2) : 0;
+    if (majorWoundLoss && loss >= majorWoundLoss) {
+      promptStatusUpdate("重伤", `HP 单次减少 ${loss} 点，达到生命上限的一半。是否标记“重伤”？`);
+    }
+    if (nextCurrent <= 0) {
+      promptStatusUpdate("昏迷", "HP 已降至 0。是否标记“昏迷”？");
+    }
+  }
+  if (key === "san" && loss >= 5) {
+    promptStatusUpdate("临时疯狂", `SAN 单次减少 ${loss} 点。请进行智力检定；是否先标记“临时疯狂”？`);
+  }
+}
+
+function promptStatusUpdate(name, message) {
+  const entry = state.statuses.find((candidate) => candidate.name === name);
+  if (!entry || entry.active) return false;
+  if (!confirm(message)) return false;
+  entry.active = true;
+  saveState(`已标记${name}`);
+  renderStatuses();
+  return true;
 }
 
 function adjustAttribute(key, delta) {
@@ -963,7 +997,7 @@ function showToast(message) {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js?v=10").catch(() => {});
+    navigator.serviceWorker.register("./service-worker.js?v=11").catch(() => {});
   });
 }
 
