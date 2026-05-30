@@ -132,6 +132,7 @@ const DEFAULT_STATE = {
 let state = loadState();
 let currentSkillFilter = "all";
 let currentRollMode = 0;
+let isEditMode = false;
 let deleteMode = false;
 let toastTimer = null;
 let pendingDelete = null;
@@ -140,6 +141,9 @@ let pendingDeleteTimer = null;
 const nodes = {
   characterName: document.querySelector("#characterName"),
   characterMeta: document.querySelector("#characterMeta"),
+  editModeButton: document.querySelector("#editModeButton"),
+  attributeModeLabel: document.querySelector("#attributeModeLabel"),
+  derivedModeLabel: document.querySelector("#derivedModeLabel"),
   vitalGrid: document.querySelector("#vitalGrid"),
   attributeGrid: document.querySelector("#attributeGrid"),
   derivedGrid: document.querySelector("#derivedGrid"),
@@ -160,7 +164,7 @@ const nodes = {
 };
 
 function skill(name, value, category) {
-  return { id: makeId(name), name, value, category };
+  return { id: makeId(name), name, value, category, checked: false };
 }
 
 function status(name) {
@@ -202,7 +206,10 @@ function mergeState(base, incoming) {
     Object.entries(base.vitals).map(([key, value]) => [key, { ...value, ...(incomingVitals[key] || {}) }])
   );
   merged.derivedStats = Array.isArray(incoming.derivedStats) ? incoming.derivedStats : base.derivedStats;
-  merged.skills = Array.isArray(incoming.skills) ? incoming.skills : base.skills;
+  merged.skills = (Array.isArray(incoming.skills) ? incoming.skills : base.skills).map((entry) => ({
+    ...entry,
+    checked: Boolean(entry.checked)
+  }));
   merged.statuses = Array.isArray(incoming.statuses) ? incoming.statuses : base.statuses;
   merged.inventory = Array.isArray(incoming.inventory) ? incoming.inventory : base.inventory;
   merged.clues = Array.isArray(incoming.clues) ? incoming.clues : base.clues;
@@ -218,6 +225,7 @@ function saveState(message = "已自动保存") {
 }
 
 function render() {
+  syncEditModeUI();
   syncDeleteModeUI();
   nodes.characterName.textContent = state.character.name;
   nodes.characterMeta.textContent = `${state.character.englishName} · ${state.character.age}岁 · 摄影爱好者`;
@@ -235,11 +243,32 @@ function render() {
   nodes.saveStatus.textContent = state.updatedAt ? `最后保存 · ${formatTime(state.updatedAt)}` : "尚未保存";
 }
 
+function setEditMode(nextValue) {
+  isEditMode = Boolean(nextValue);
+  if (!isEditMode && deleteMode) {
+    deleteMode = false;
+    clearPendingDelete();
+  }
+  render();
+  showToast(isEditMode ? "编辑模式已开启。" : "已回到跑团模式。");
+}
+
+function syncEditModeUI() {
+  document.body.classList.toggle("edit-mode", isEditMode);
+  nodes.editModeButton.textContent = isEditMode ? "完成" : "编辑";
+  nodes.editModeButton.setAttribute("aria-pressed", String(isEditMode));
+  nodes.attributeModeLabel.textContent = isEditMode ? "可直接修改" : "检定速查";
+  nodes.derivedModeLabel.textContent = isEditMode ? "可手动修正" : "规则速查";
+}
+
 function renderVitals() {
   nodes.vitalGrid.innerHTML = "";
   Object.entries(state.vitals).forEach(([key, vital]) => {
     const card = document.createElement("article");
     card.className = "vital-card";
+    const maxControl = isEditMode
+      ? `<input type="number" inputmode="numeric" data-vital="${key}" data-vital-field="max" value="${vital.max}" aria-label="${vital.label}上限">`
+      : `<strong class="vital-max-readout">${escapeHtml(vital.max)}</strong>`;
     card.innerHTML = `
       <div class="vital-top">
         <strong>${escapeHtml(vital.label)}</strong>
@@ -248,7 +277,7 @@ function renderVitals() {
       <div class="vital-values">
         <input type="number" inputmode="numeric" data-vital="${key}" data-vital-field="current" value="${vital.current}" aria-label="${vital.label}当前值">
         <span>/</span>
-        <input type="number" inputmode="numeric" data-vital="${key}" data-vital-field="max" value="${vital.max}" aria-label="${vital.label}上限">
+        ${maxControl}
       </div>
       <div class="adjust-row">
         <button type="button" data-adjust-vital="${key}" data-delta="-5">-5</button>
@@ -286,6 +315,18 @@ function renderAttributes() {
     const value = Number(state.attributes[key] || 0);
     const card = document.createElement("article");
     card.className = "attr-card";
+    const playActions = `
+      <div class="attr-play-score">
+        <strong>${value}</strong>
+        <button class="primary-button" type="button" data-roll-attribute="${key}">掷</button>
+      </div>
+    `;
+    const editActions = `
+      <div class="attr-actions">
+        <input type="number" inputmode="numeric" data-attr="${key}" value="${value}" aria-label="${label}">
+        <button class="primary-button" type="button" data-roll-attribute="${key}">掷</button>
+      </div>
+    `;
     card.innerHTML = `
       <div class="attr-head">
         <strong>${label}</strong>
@@ -295,10 +336,7 @@ function renderAttributes() {
         <span>困难 ${Math.floor(value / 2)}</span>
         <span>极难 ${Math.floor(value / 5)}</span>
       </div>
-      <div class="attr-actions">
-        <input type="number" inputmode="numeric" data-attr="${key}" value="${value}" aria-label="${label}">
-        <button class="primary-button" type="button" data-roll-attribute="${key}">掷</button>
-      </div>
+      ${isEditMode ? editActions : playActions}
       ${key === "LUCK" ? `
         <div class="adjust-row attr-adjust-row" aria-label="消耗或恢复幸运">
           <button type="button" data-adjust-attr="LUCK" data-delta="-5">-5</button>
@@ -315,12 +353,17 @@ function renderAttributes() {
 function renderDerivedStats() {
   nodes.derivedGrid.innerHTML = "";
   state.derivedStats.forEach((entry) => {
-    const card = document.createElement("label");
+    const card = document.createElement(isEditMode ? "label" : "article");
     card.className = "derived-card";
-    card.innerHTML = `
-      <span>${escapeHtml(entry.label)}</span>
-      <input type="number" inputmode="numeric" data-derived="${entry.id}" value="${entry.value}" aria-label="${escapeAttr(entry.label)}">
-    `;
+    card.innerHTML = isEditMode
+      ? `
+        <span>${escapeHtml(entry.label)}</span>
+        <input type="number" inputmode="numeric" data-derived="${entry.id}" value="${entry.value}" aria-label="${escapeAttr(entry.label)}">
+      `
+      : `
+        <span>${escapeHtml(entry.label)}</span>
+        <strong>${escapeHtml(entry.value)}</strong>
+      `;
     nodes.derivedGrid.append(card);
   });
 }
@@ -355,21 +398,39 @@ function renderSkills() {
     const card = document.createElement("article");
     card.className = "skill-card";
     card.dataset.skillId = entry.id;
-    card.innerHTML = `
-      <div class="skill-main">
-        <input data-skill-name="${entry.id}" value="${escapeAttr(entry.name)}" aria-label="技能名称">
-        <input type="number" inputmode="numeric" data-skill-value="${entry.id}" value="${value}" aria-label="${escapeAttr(entry.name)}数值">
-        <button class="primary-button" type="button" data-roll-skill="${entry.id}">掷</button>
-      </div>
-      <div class="skill-meta">
-        <span>困难 ${Math.floor(value / 2)} · 极难 ${Math.floor(value / 5)}</span>
-        <select data-skill-category="${entry.id}" aria-label="技能分组">
-          <option value="主要技能" ${entry.category === "主要技能" ? "selected" : ""}>主要技能</option>
-          <option value="其他技能" ${entry.category === "其他技能" ? "selected" : ""}>其他技能</option>
-        </select>
-        <button class="skill-delete" type="button" data-delete-skill="${entry.id}">删</button>
-      </div>
-    `;
+    card.innerHTML = isEditMode
+      ? `
+        <div class="skill-main">
+          <input data-skill-name="${entry.id}" value="${escapeAttr(entry.name)}" aria-label="技能名称">
+          <input type="number" inputmode="numeric" data-skill-value="${entry.id}" value="${value}" aria-label="${escapeAttr(entry.name)}数值">
+          <button class="primary-button" type="button" data-roll-skill="${entry.id}">掷</button>
+        </div>
+        <div class="skill-meta">
+          <label class="skill-check">
+            <input type="checkbox" data-skill-checked="${entry.id}" ${entry.checked ? "checked" : ""}>
+            <span>已用</span>
+          </label>
+          <span>困难 ${Math.floor(value / 2)} · 极难 ${Math.floor(value / 5)}</span>
+          <select data-skill-category="${entry.id}" aria-label="技能分组">
+            <option value="主要技能" ${entry.category === "主要技能" ? "selected" : ""}>主要技能</option>
+            <option value="其他技能" ${entry.category === "其他技能" ? "selected" : ""}>其他技能</option>
+          </select>
+          <button class="skill-delete" type="button" data-delete-skill="${entry.id}">删</button>
+        </div>
+      `
+      : `
+        <div class="skill-play-row">
+          <label class="skill-check">
+            <input type="checkbox" data-skill-checked="${entry.id}" ${entry.checked ? "checked" : ""}>
+            <span>已用</span>
+          </label>
+          <div class="skill-play-main">
+            <strong>${escapeHtml(entry.name)}</strong>
+            <span>${value} · 困难 ${Math.floor(value / 2)} · 极难 ${Math.floor(value / 5)}</span>
+          </div>
+          <button class="primary-button" type="button" data-roll-skill="${entry.id}">掷</button>
+        </div>
+      `;
     nodes.skillList.append(card);
   });
 }
@@ -391,6 +452,10 @@ function renderEditableList(key, container) {
 }
 
 function renderLore() {
+  if (isEditMode) {
+    renderEditableList("lore", nodes.loreList);
+    return;
+  }
   nodes.loreList.innerHTML = "";
   state.lore.forEach((entry) => {
     const card = document.createElement("article");
@@ -424,6 +489,15 @@ function renderLog() {
 }
 
 function renderProfile() {
+  if (isEditMode) {
+    nodes.profileText.innerHTML = `
+      <label class="field">
+        <span>角色简介</span>
+        <textarea id="profileEditor" rows="7" placeholder="每段之间留一行">${escapeHtml(state.character.profile.join("\n\n"))}</textarea>
+      </label>
+    `;
+    return;
+  }
   nodes.profileText.innerHTML = state.character.profile.map((text) => `<p>${escapeHtml(text)}</p>`).join("");
 }
 
@@ -506,7 +580,8 @@ function rollAttribute(key) {
     APP: "外貌",
     EDU: "教育",
     SIZ: "体型",
-    INT: "智力"
+    INT: "智力",
+    LUCK: "幸运"
   };
   rollCheck(labels[key] || key, Number(state.attributes[key] || 0), "属性检定");
 }
@@ -540,9 +615,15 @@ function addSkill() {
 }
 
 function addListItem(key) {
-  state[key].unshift(item(key === "clues" ? "新线索" : "新物品", ""));
-  saveState(key === "clues" ? "已新增线索" : "已新增物品");
-  renderEditableList(key, key === "clues" ? nodes.clueList : nodes.inventoryList);
+  const defaults = {
+    clues: ["新线索", "已新增线索"],
+    inventory: ["新物品", "已新增物品"],
+    lore: ["新人物", "已新增人物"]
+  };
+  const [title, message] = defaults[key] || ["新条目", "已新增"];
+  state[key].unshift(item(title, ""));
+  saveState(message);
+  renderEditableList(key, key === "clues" ? nodes.clueList : key === "inventory" ? nodes.inventoryList : nodes.loreList);
 }
 
 function addLog(note = "") {
@@ -587,6 +668,7 @@ function clearPendingDelete() {
 }
 
 function setDeleteMode(nextValue) {
+  if (!isEditMode) return;
   deleteMode = nextValue;
   clearPendingDelete();
   syncDeleteModeUI();
@@ -692,6 +774,13 @@ function bindEvents() {
       state.statusNote = target.value;
       saveState();
     }
+    if (target.matches("#profileEditor")) {
+      state.character.profile = target.value
+        .split(/\n\s*\n/g)
+        .map((text) => text.trim())
+        .filter(Boolean);
+      saveState();
+    }
     if (target.matches("[data-skill-name]")) {
       const entry = state.skills.find((candidate) => candidate.id === target.dataset.skillName);
       if (entry) {
@@ -744,6 +833,13 @@ function bindEvents() {
         saveState();
       }
     }
+    if (target.matches("[data-skill-checked]")) {
+      const entry = state.skills.find((candidate) => candidate.id === target.dataset.skillChecked);
+      if (entry) {
+        entry.checked = target.checked;
+        saveState();
+      }
+    }
     if (target.matches("[data-skill-category]")) {
       const entry = state.skills.find((candidate) => candidate.id === target.dataset.skillCategory);
       if (entry) {
@@ -763,7 +859,7 @@ function bindEvents() {
     if (target.dataset.rollAttribute) rollAttribute(target.dataset.rollAttribute);
     if (target.dataset.rollSkill) rollSkill(target.dataset.rollSkill);
     if (target.dataset.deleteSkill) {
-      if (!deleteMode) return;
+      if (!isEditMode || !deleteMode) return;
       requestDelete("skill", target.dataset.deleteSkill, target, () => {
         state.skills = state.skills.filter((entry) => entry.id !== target.dataset.deleteSkill);
         saveState("已删除技能");
@@ -771,16 +867,16 @@ function bindEvents() {
       });
     }
     if (target.dataset.deleteList) {
-      if (!deleteMode) return;
+      if (!isEditMode || !deleteMode) return;
       const [key, id] = target.dataset.deleteList.split(":");
       requestDelete(key, id, target, () => {
         state[key] = state[key].filter((entry) => entry.id !== id);
         saveState("已删除");
-        renderEditableList(key, key === "clues" ? nodes.clueList : nodes.inventoryList);
+        renderEditableList(key, key === "clues" ? nodes.clueList : key === "inventory" ? nodes.inventoryList : nodes.loreList);
       });
     }
     if (target.dataset.deleteLog) {
-      if (!deleteMode) return;
+      if (!isEditMode || !deleteMode) return;
       requestDelete("log", target.dataset.deleteLog, target, () => {
         state.sessionLog = state.sessionLog.filter((entry) => entry.id !== target.dataset.deleteLog);
         saveState("已删除日志");
@@ -806,15 +902,20 @@ function bindEvents() {
     });
   });
   document.querySelectorAll("[data-delete-mode-toggle]").forEach((button) => {
-    button.addEventListener("click", () => setDeleteMode(!deleteMode));
+    button.addEventListener("click", () => {
+      if (!isEditMode) return;
+      setDeleteMode(!deleteMode);
+    });
   });
 
+  nodes.editModeButton.addEventListener("click", () => setEditMode(!isEditMode));
   document.querySelector("#recalcButton").addEventListener("click", recalcDerived);
   document.querySelector("#resetButton").addEventListener("click", resetCharacter);
   document.querySelector("#customRollButton").addEventListener("click", () => rollDice(nodes.customDice.value));
   document.querySelector("#addSkillButton").addEventListener("click", addSkill);
   document.querySelector("#addClueButton").addEventListener("click", () => addListItem("clues"));
   document.querySelector("#addItemButton").addEventListener("click", () => addListItem("inventory"));
+  document.querySelector("#addLoreButton").addEventListener("click", () => addListItem("lore"));
   document.querySelector("#addLogButton").addEventListener("click", () => addLog());
   document.querySelector("#exportButton").addEventListener("click", exportBackup);
   document.querySelector("#importInput").addEventListener("change", (event) => importBackup(event.target.files[0]));
@@ -862,7 +963,7 @@ function showToast(message) {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js?v=9").catch(() => {});
+    navigator.serviceWorker.register("./service-worker.js?v=10").catch(() => {});
   });
 }
 

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#151815">
   <title>陈嘉文 CoC 跑团记录</title>
-  <link rel="manifest" href="manifest.json?v=9">
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="manifest" href="manifest.json?v=10">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
   <div class="app-shell">
@@ -20,7 +20,10 @@
             <h1 id="characterName">陈嘉文</h1>
             <p id="characterMeta">Kevin Chen · 24岁 · 摄影爱好者</p>
           </div>
-          <button class="icon-button" id="resetButton" type="button" aria-label="恢复初始角色卡" title="恢复初始角色卡">↺</button>
+          <div class="hero-actions">
+            <button class="ghost-button" id="editModeButton" type="button" aria-pressed="false">编辑</button>
+            <button class="icon-button edit-only" id="resetButton" type="button" aria-label="恢复初始角色卡" title="恢复初始角色卡">↺</button>
+          </div>
         </div>
       </div>
     </header>
@@ -38,7 +41,7 @@
         <section class="panel vitals-panel">
           <div class="section-heading">
             <h2>当前状态</h2>
-            <button class="ghost-button" id="recalcButton" type="button">按规则重算上限</button>
+            <button class="ghost-button edit-only" id="recalcButton" type="button">按规则重算上限</button>
           </div>
           <div class="vital-grid" id="vitalGrid"></div>
         </section>
@@ -46,7 +49,7 @@
         <section class="panel">
           <div class="section-heading">
             <h2>属性</h2>
-            <span class="quiet">可直接修改</span>
+            <span class="quiet" id="attributeModeLabel">检定速查</span>
           </div>
           <div class="segmented roll-mode dashboard-roll-mode" role="group" aria-label="属性奖励惩罚骰">
             <button class="is-active" type="button" data-roll-mode="0">普通</button>
@@ -59,7 +62,7 @@
         <section class="panel">
           <div class="section-heading">
             <h2>派生速查</h2>
-            <span class="quiet">可手动修正</span>
+            <span class="quiet" id="derivedModeLabel">规则速查</span>
           </div>
           <div class="derived-grid" id="derivedGrid"></div>
         </section>
@@ -103,8 +106,8 @@
           <div class="section-heading">
             <h2>技能检定</h2>
             <div class="section-actions">
-              <button class="ghost-button delete-mode-button" type="button" data-delete-mode-toggle>删除模式：关</button>
-              <button class="primary-button" id="addSkillButton" type="button">新增技能</button>
+              <button class="ghost-button delete-mode-button edit-only" type="button" data-delete-mode-toggle>删除模式：关</button>
+              <button class="primary-button edit-only" id="addSkillButton" type="button">新增技能</button>
             </div>
           </div>
           <label class="field">
@@ -130,7 +133,7 @@
           <div class="section-heading">
             <h2>线索</h2>
             <div class="section-actions">
-              <button class="ghost-button delete-mode-button" type="button" data-delete-mode-toggle>删除模式：关</button>
+              <button class="ghost-button delete-mode-button edit-only" type="button" data-delete-mode-toggle>删除模式：关</button>
               <button class="primary-button" id="addClueButton" type="button">新增线索</button>
             </div>
           </div>
@@ -148,7 +151,10 @@
         <section class="panel">
           <div class="section-heading">
             <h2>人物与背景</h2>
-            <span class="quiet">速查</span>
+            <div class="section-actions">
+              <span class="quiet">速查</span>
+              <button class="primary-button edit-only" id="addLoreButton" type="button">新增人物</button>
+            </div>
           </div>
           <div class="lore-list" id="loreList"></div>
         </section>
@@ -159,7 +165,7 @@
           <div class="section-heading">
             <h2>流程日志</h2>
             <div class="section-actions">
-              <button class="ghost-button delete-mode-button" type="button" data-delete-mode-toggle>删除模式：关</button>
+              <button class="ghost-button delete-mode-button edit-only" type="button" data-delete-mode-toggle>删除模式：关</button>
               <button class="primary-button" id="addLogButton" type="button">添加记录</button>
             </div>
           </div>
@@ -195,6 +201,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

@@ -134,6 +134,22 @@ textarea {
   gap: 14px;
 }
 
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.edit-only {
+  display: none;
+}
+
+body.edit-mode .edit-only {
+  display: inline-grid;
+  place-items: center;
+}
+
 h1,
 h2,
 h3,
@@ -300,6 +316,17 @@ main {
   font-weight: 700;
 }
 
+.vital-max-readout {
+  min-height: 45px;
+  border: 1px solid rgba(57, 64, 53, 0.74);
+  border-radius: 8px;
+  background: rgba(17, 20, 15, 0.7);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 1.15rem;
+}
+
 .adjust-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -355,6 +382,13 @@ main {
   font-weight: 700;
 }
 
+.derived-card strong {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  font-size: 1.28rem;
+}
+
 .attr-head {
   display: flex;
   align-items: baseline;
@@ -396,6 +430,23 @@ main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 54px;
   gap: 8px;
+}
+
+.attr-play-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.attr-play-score strong {
+  min-height: 44px;
+  border: 1px solid rgba(57, 64, 53, 0.74);
+  border-radius: 8px;
+  background: rgba(17, 20, 15, 0.7);
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
 }
 
 .attr-card input {
@@ -527,7 +578,7 @@ main {
 
 .skill-meta {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
@@ -542,15 +593,58 @@ main {
   color: var(--muted);
 }
 
+.skill-play-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 50px;
+  gap: 10px;
+  align-items: center;
+}
+
+.skill-play-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.skill-play-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-play-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.skill-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.skill-check input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  accent-color: var(--accent);
+}
+
 .skill-delete {
   display: none;
   min-height: 34px;
   color: var(--muted);
 }
 
-body.delete-mode .skill-delete,
-body.delete-mode [data-delete-list],
-body.delete-mode [data-delete-log] {
+body.edit-mode.delete-mode .skill-delete,
+body.edit-mode.delete-mode [data-delete-list],
+body.edit-mode.delete-mode [data-delete-log] {
   display: inline-grid;
   place-items: center;
 }
