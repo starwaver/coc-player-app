@@ -281,12 +281,18 @@ function renderAttributes() {
     const card = document.createElement("article");
     card.className = "attr-card";
     card.innerHTML = `
-      <div>
+      <div class="attr-head">
         <strong>${label}</strong>
-        <small>${key} · 困难 ${Math.floor(value / 2)} · 极难 ${Math.floor(value / 5)}</small>
+        <span>${key}</span>
       </div>
-      <input type="number" inputmode="numeric" data-attr="${key}" value="${value}" aria-label="${label}">
-      <button class="primary-button" type="button" data-roll-attribute="${key}">掷</button>
+      <div class="attr-breakpoints">
+        <span>困难 ${Math.floor(value / 2)}</span>
+        <span>极难 ${Math.floor(value / 5)}</span>
+      </div>
+      <div class="attr-actions">
+        <input type="number" inputmode="numeric" data-attr="${key}" value="${value}" aria-label="${label}">
+        <button class="primary-button" type="button" data-roll-attribute="${key}">掷</button>
+      </div>
     `;
     nodes.attributeGrid.append(card);
   });
@@ -829,7 +835,7 @@ function showToast(message) {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js?v=6").catch(() => {});
+    navigator.serviceWorker.register("./service-worker.js?v=7").catch(() => {});
   });
 }
 

@@ -82,7 +82,7 @@ textarea {
 }
 
 .app-shell {
-  width: min(100%, 760px);
+  width: min(100%, 820px);
   margin: 0 auto;
   padding-bottom: calc(76px + env(safe-area-inset-bottom));
 }
@@ -199,6 +199,8 @@ h3 {
 
 main {
   padding: 12px;
+  display: grid;
+  gap: 12px;
 }
 
 .tab-panel {
@@ -206,11 +208,11 @@ main {
 }
 
 .tab-panel.is-active {
-  display: block;
+  display: grid;
+  gap: 12px;
 }
 
 .panel {
-  margin-bottom: 12px;
   border: 1px solid rgba(57, 64, 53, 0.9);
   border-radius: 8px;
   background: rgba(27, 31, 26, 0.96);
@@ -224,6 +226,7 @@ main {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .section-actions {
@@ -312,7 +315,7 @@ main {
 
 .attribute-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
 }
 
@@ -324,13 +327,12 @@ main {
 
 .attr-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 70px 44px;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: 1fr;
+  gap: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #151914;
-  padding: 9px;
+  padding: 11px;
 }
 
 .derived-card {
@@ -353,23 +355,59 @@ main {
   font-weight: 700;
 }
 
-.attr-card strong {
-  display: block;
-  line-height: 1.1;
+.attr-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.attr-card small {
+.attr-head strong {
+  font-size: 1.18rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.attr-head span {
   color: var(--faint);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.attr-breakpoints {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.attr-breakpoints span {
+  min-height: 30px;
+  border: 1px solid rgba(57, 64, 53, 0.74);
+  border-radius: 7px;
+  background: rgba(17, 20, 15, 0.7);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.attr-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  gap: 8px;
 }
 
 .attr-card input {
+  min-height: 44px;
   padding: 8px;
   text-align: center;
   font-weight: 700;
+  font-size: 1.12rem;
 }
 
 .attr-card button {
-  min-height: 38px;
+  min-height: 44px;
   padding: 0;
 }
 
@@ -379,7 +417,7 @@ main {
 
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -484,9 +522,9 @@ main {
 }
 
 .skill-meta {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
   color: var(--muted);
@@ -631,7 +669,6 @@ body.delete-mode [data-delete-log] {
   }
 
   .vital-grid,
-  .attribute-grid,
   .derived-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -644,8 +681,21 @@ body.delete-mode [data-delete-log] {
 }
 
 @media (max-width: 360px) {
+  .attribute-grid {
+    grid-template-columns: 1fr;
+  }
+
   .skill-main {
-    grid-template-columns: minmax(0, 1fr) 64px 44px;
+    grid-template-columns: minmax(0, 1fr) 62px 44px;
+  }
+
+  .skill-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-meta select,
+  .skill-delete {
+    width: 100%;
   }
 
   .tab {
