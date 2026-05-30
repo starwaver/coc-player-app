@@ -1,0 +1,17 @@
+{
+  "name": "陈嘉文 CoC 跑团记录",
+  "short_name": "陈嘉文CoC",
+  "description": "手机端 CoC 角色卡、状态、线索与跑团日志工具。",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121410",
+  "theme_color": "#151815",
+  "icons": [
+    {
+      "src": "assets/chen-jiawen.png",
+      "sizes": "1122x1402",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
