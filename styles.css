@@ -415,6 +415,10 @@ main {
   margin-bottom: 10px;
 }
 
+.attr-adjust-row {
+  margin-top: -2px;
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

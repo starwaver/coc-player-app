@@ -21,13 +21,13 @@ const DEFAULT_STATE = {
     APP: 65,
     EDU: 80,
     SIZ: 55,
-    INT: 80
+    INT: 80,
+    LUCK: 85
   },
   vitals: {
     hp: { label: "HP", current: 11, max: 11 },
     san: { label: "SAN", current: 75, max: 75 },
-    mp: { label: "MP", current: 17, max: 17 },
-    luck: { label: "幸运", current: 85, max: 85 }
+    mp: { label: "MP", current: 17, max: 17 }
   },
   derivedStats: [
     { id: "idea", label: "灵感", value: 80 },
@@ -194,7 +194,13 @@ function mergeState(base, incoming) {
   const merged = { ...base, ...incoming };
   merged.character = { ...base.character, ...(incoming.character || {}) };
   merged.attributes = { ...base.attributes, ...(incoming.attributes || {}) };
-  merged.vitals = { ...base.vitals, ...(incoming.vitals || {}) };
+  if (!incoming.attributes?.LUCK && incoming.vitals?.luck?.current !== undefined) {
+    merged.attributes.LUCK = incoming.vitals.luck.current;
+  }
+  const incomingVitals = incoming.vitals || {};
+  merged.vitals = Object.fromEntries(
+    Object.entries(base.vitals).map(([key, value]) => [key, { ...value, ...(incomingVitals[key] || {}) }])
+  );
   merged.derivedStats = Array.isArray(incoming.derivedStats) ? incoming.derivedStats : base.derivedStats;
   merged.skills = Array.isArray(incoming.skills) ? incoming.skills : base.skills;
   merged.statuses = Array.isArray(incoming.statuses) ? incoming.statuses : base.statuses;
@@ -259,8 +265,7 @@ function getVitalHint(key) {
   return {
     hp: "伤势",
     san: "理智",
-    mp: "魔法",
-    luck: "消耗"
+    mp: "魔法"
   }[key] || "";
 }
 
@@ -273,7 +278,8 @@ function renderAttributes() {
     APP: "外貌",
     EDU: "教育",
     SIZ: "体型",
-    INT: "智力"
+    INT: "智力",
+    LUCK: "幸运"
   };
   nodes.attributeGrid.innerHTML = "";
   Object.entries(labels).forEach(([key, label]) => {
@@ -293,6 +299,14 @@ function renderAttributes() {
         <input type="number" inputmode="numeric" data-attr="${key}" value="${value}" aria-label="${label}">
         <button class="primary-button" type="button" data-roll-attribute="${key}">掷</button>
       </div>
+      ${key === "LUCK" ? `
+        <div class="adjust-row attr-adjust-row" aria-label="消耗或恢复幸运">
+          <button type="button" data-adjust-attr="LUCK" data-delta="-5">-5</button>
+          <button type="button" data-adjust-attr="LUCK" data-delta="-1">-1</button>
+          <button type="button" data-adjust-attr="LUCK" data-delta="1">+1</button>
+          <button type="button" data-adjust-attr="LUCK" data-delta="5">+5</button>
+        </div>
+      ` : ""}
     `;
     nodes.attributeGrid.append(card);
   });
@@ -430,6 +444,12 @@ function adjustVital(key, delta) {
   renderVitals();
 }
 
+function adjustAttribute(key, delta) {
+  state.attributes[key] = clampNumber(Number(state.attributes[key] || 0) + Number(delta), 0, 999);
+  saveState();
+  renderAttributes();
+}
+
 function recalcDerived() {
   const con = Number(state.attributes.CON || 0);
   const siz = Number(state.attributes.SIZ || 0);
@@ -438,7 +458,6 @@ function recalcDerived() {
   state.vitals.hp.max = Math.floor((con + siz) / 10);
   state.vitals.mp.max = Math.floor(pow / 5);
   state.vitals.san.max = pow;
-  state.vitals.luck.max = Math.max(state.vitals.luck.max, state.vitals.luck.current);
   const idea = state.derivedStats.find((entry) => entry.id === "idea");
   if (idea) idea.value = int;
   saveState("已重算上限");
@@ -654,6 +673,13 @@ function bindEvents() {
     if (target.matches("[data-attr]")) {
       state.attributes[target.dataset.attr] = clampNumber(target.value, 0, 999);
       saveState();
+      const card = target.closest(".attr-card");
+      const value = Number(state.attributes[target.dataset.attr] || 0);
+      const breakpoints = card?.querySelectorAll(".attr-breakpoints span");
+      if (breakpoints?.length === 2) {
+        breakpoints[0].textContent = `困难 ${Math.floor(value / 2)}`;
+        breakpoints[1].textContent = `极难 ${Math.floor(value / 5)}`;
+      }
     }
     if (target.matches("[data-derived]")) {
       const entry = state.derivedStats.find((candidate) => candidate.id === target.dataset.derived);
@@ -732,6 +758,7 @@ function bindEvents() {
     const target = event.target.closest("button");
     if (!target) return;
     if (target.dataset.adjustVital) adjustVital(target.dataset.adjustVital, target.dataset.delta);
+    if (target.dataset.adjustAttr) adjustAttribute(target.dataset.adjustAttr, target.dataset.delta);
     if (target.dataset.roll) rollDice(target.dataset.roll);
     if (target.dataset.rollAttribute) rollAttribute(target.dataset.rollAttribute);
     if (target.dataset.rollSkill) rollSkill(target.dataset.rollSkill);
@@ -835,7 +862,7 @@ function showToast(message) {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js?v=7").catch(() => {});
+    navigator.serviceWorker.register("./service-worker.js?v=9").catch(() => {});
   });
 }
 

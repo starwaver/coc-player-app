@@ -1,10 +1,10 @@
-const CACHE_NAME = "chen-jiawen-coc-v7";
+const CACHE_NAME = "chen-jiawen-coc-v9";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=7",
-  "./app.js?v=7",
-  "./manifest.json?v=7",
+  "./styles.css?v=9",
+  "./app.js?v=9",
+  "./manifest.json?v=9",
   "./assets/chen-jiawen.png"
 ];
 
@@ -24,6 +24,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  if (event.request.mode === "navigate") {
+    event.respondWith(fetch(event.request).catch(() => caches.match("./index.html")));
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
